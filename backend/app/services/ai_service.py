@@ -94,6 +94,84 @@ OVERALL_SCORE: [0-10]"""
                     result["overall_score"] = 5.0
         return result
 
+    def generate_coding_problem(self, difficulty: str, topic: str, role: str) -> dict:
+        prompt = f"""Generate a coding problem for a {role} candidate.
+Topic: {topic}
+Difficulty: {difficulty}
+
+Return ONLY a JSON object:
+{{
+  "title": "<problem title>",
+  "description": "<full problem description>",
+  "examples": [
+    {{"input": "<example input>", "output": "<example output>", "explanation": "<optional>"}}
+  ],
+  "constraints": ["<constraint 1>", "<constraint 2>"],
+  "starter_code": {{
+    "python": "<python starter>",
+    "javascript": "<js starter>",
+    "java": "<java starter>"
+  }},
+  "solution": "<reference solution in python>",
+  "hints": ["<hint 1>", "<hint 2>"]
+}}"""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=2000,
+        )
+        text = response.choices[0].message.content.strip()
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        try:
+            return json.loads(text)
+        except Exception:
+            return {
+                "title": f"{topic} Problem",
+                "description": f"Solve a {difficulty} {topic} problem.",
+                "examples": [],
+                "constraints": [],
+                "starter_code": {"python": "def solution():\n    pass", "javascript": "function solution() {}", "java": ""},
+                "solution": "",
+                "hints": [],
+            }
+
+    def review_code(self, problem: str, code: str, language: str) -> dict:
+        prompt = f"""You are an expert code reviewer. Review this {language} solution.
+
+Problem: {problem}
+
+Code:
+{code}
+
+Return ONLY a JSON object:
+{{
+  "score": <0-10>,
+  "correct": <true or false>,
+  "time_complexity": "<e.g. O(n)>",
+  "space_complexity": "<e.g. O(1)>",
+  "feedback": "<2-3 sentence review>",
+  "improvements": ["<improvement 1>", "<improvement 2>"]
+}}"""
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=600,
+        )
+        text = response.choices[0].message.content.strip()
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        try:
+            return json.loads(text)
+        except Exception:
+            return {"score": 5, "correct": False, "time_complexity": "Unknown", "space_complexity": "Unknown", "feedback": "Could not review automatically.", "improvements": []}
+
     def generate_exam_questions(self, topic: str, role: str, difficulty: str, num_questions: int, question_types: list[str]) -> list[dict]:
         types_str = ", ".join(question_types)
         prompt = f"""Generate exactly {num_questions} exam questions for a {role} candidate on the topic: "{topic}".
@@ -182,5 +260,82 @@ Return ONLY a JSON object:
         except Exception:
             return {"strengths": [], "weaknesses": [], "recommendation": "Keep practicing!"}
 
+
+    def analyze_resume(self, resume_text: str, target_role: str) -> dict:
+        """Full resume analysis — scoring, ATS, keywords, section feedback, rewrites."""
+        prompt = f"""You are an expert resume reviewer and career coach. Analyze this resume for a {target_role} position.
+
+RESUME TEXT:
+{resume_text[:6000]}
+
+Return ONLY a valid JSON object with this exact structure:
+{{
+  "overall_score": <float 0-10>,
+  "ats_score": <float 0-10>,
+  "ats_issues": ["<issue1>", "<issue2>"],
+  "missing_keywords": ["<keyword1>", "<keyword2>", "<keyword3>", "<keyword4>", "<keyword5>"],
+  "section_feedback": [
+    {{
+      "section": "Summary/Objective",
+      "score": <float 0-10>,
+      "feedback": "<2 sentence feedback>",
+      "rewrite_suggestion": "<improved version or null>"
+    }},
+    {{
+      "section": "Work Experience",
+      "score": <float 0-10>,
+      "feedback": "<2 sentence feedback>",
+      "rewrite_suggestion": "<tip to improve bullet points or null>"
+    }},
+    {{
+      "section": "Skills",
+      "score": <float 0-10>,
+      "feedback": "<2 sentence feedback>",
+      "rewrite_suggestion": "<missing skills to add or null>"
+    }},
+    {{
+      "section": "Education",
+      "score": <float 0-10>,
+      "feedback": "<1 sentence feedback>",
+      "rewrite_suggestion": null
+    }}
+  ],
+  "strengths": ["<strength1>", "<strength2>", "<strength3>"],
+  "improvements": ["<improvement1>", "<improvement2>", "<improvement3>"],
+  "recommendation": "<2-3 sentence overall recommendation>"
+}}
+
+Rules:
+- ATS issues = things that make it hard for applicant tracking systems (tables, images, headers, missing keywords, unusual fonts)
+- Missing keywords = important skills/terms for {target_role} that are absent from the resume
+- Be specific and actionable
+- Return ONLY the JSON, no markdown fences"""
+
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{{"role": "user", "content": prompt}}],
+            temperature=0.4,
+            max_tokens=3000,
+        )
+        text = response.choices[0].message.content.strip()
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        import json as _json
+        try:
+            data = _json.loads(text)
+            return data
+        except Exception:
+            return {{
+                "overall_score": 5.0,
+                "ats_score": 5.0,
+                "ats_issues": ["Could not fully analyze — try again"],
+                "missing_keywords": [],
+                "section_feedback": [],
+                "strengths": [],
+                "improvements": ["Please try uploading again"],
+                "recommendation": "Analysis failed. Please try again.",
+            }}
 
 ai_service = AIService()

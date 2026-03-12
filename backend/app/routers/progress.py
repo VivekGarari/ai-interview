@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models.users import User
 from app.models.session import InterviewSession, SessionStatus
 from app.models.submission import CodeSubmission
-
 
 router = APIRouter(prefix="/progress", tags=["Progress"])
 
@@ -17,29 +15,23 @@ def get_dashboard(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get full dashboard stats for the current user."""
-
-    # Interview stats
     all_sessions = db.query(InterviewSession).filter(
         InterviewSession.user_id == current_user.id
     ).all()
 
-    completed = [s for s in all_sessions if s.status == SessionStatus.COMPLETED]
+    completed = [s for s in all_sessions if s.status == SessionStatus.COMPLETED.value]
     scores = [s.overall_score for s in completed if s.overall_score is not None]
 
     avg_score = round(sum(scores) / len(scores), 1) if scores else 0
     best_score = round(max(scores), 1) if scores else 0
 
-    # Sessions by type
     by_type = {}
     for s in completed:
-        t = s.interview_type.value
+        t = s.interview_type
         by_type[t] = by_type.get(t, 0) + 1
 
-    # Recent sessions (last 5)
     recent_sessions = sorted(completed, key=lambda x: x.started_at, reverse=True)[:5]
 
-    # Code submission stats
     submissions = db.query(CodeSubmission).filter(
         CodeSubmission.user_id == current_user.id
     ).all()
@@ -49,12 +41,11 @@ def get_dashboard(
         quality_scores = [s.code_quality_score for s in submissions if s.code_quality_score]
         avg_code_quality = round(sum(quality_scores) / len(quality_scores), 1) if quality_scores else 0
 
-    # Score trend (last 10 sessions)
     score_trend = [
         {
             "date": s.started_at.strftime("%Y-%m-%d"),
             "score": s.overall_score,
-            "type": s.interview_type.value,
+            "type": s.interview_type,
         }
         for s in sorted(completed, key=lambda x: x.started_at)[-10:]
         if s.overall_score is not None
@@ -63,8 +54,8 @@ def get_dashboard(
     return {
         "user": {
             "name": current_user.full_name,
-            "target_role": current_user.target_role.value,
-            "experience_level": current_user.experience_level.value,
+            "target_role": current_user.target_role,
+            "experience_level": current_user.experience_level,
         },
         "interview_stats": {
             "total_sessions": len(all_sessions),
@@ -81,7 +72,7 @@ def get_dashboard(
         "recent_sessions": [
             {
                 "id": s.id,
-                "type": s.interview_type.value,
+                "type": s.interview_type,
                 "role": s.target_role,
                 "score": s.overall_score,
                 "date": s.started_at.strftime("%Y-%m-%d"),
@@ -97,7 +88,6 @@ def get_history(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Get full session history."""
     sessions = db.query(InterviewSession).filter(
         InterviewSession.user_id == current_user.id
     ).order_by(InterviewSession.started_at.desc()).all()
@@ -105,10 +95,10 @@ def get_history(
     return [
         {
             "id": s.id,
-            "type": s.interview_type.value,
+            "type": s.interview_type,
             "role": s.target_role,
             "difficulty": s.difficulty,
-            "status": s.status.value,
+            "status": s.status,
             "score": s.overall_score,
             "summary": s.ai_summary,
             "strengths": s.strengths,

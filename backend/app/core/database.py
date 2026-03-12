@@ -1,18 +1,21 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import DeclarativeBase, sessionmaker, Session
-
 from app.core.config import settings
 
-# Use sync psycopg2 engine
-SYNC_DATABASE_URL = settings.DATABASE_URL.replace(
-    "postgresql+asyncpg", "postgresql+psycopg2"
-).replace(
-    "postgresql+psycopg2+psycopg2", "postgresql+psycopg2"
+
+engine = create_engine(
+    settings.DATABASE_URL,
+    echo=settings.DEBUG,
+    pool_size=10,
+    max_overflow=20,
 )
 
-engine = create_engine(SYNC_DATABASE_URL, echo=settings.DEBUG)
-
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+SessionLocal = sessionmaker(
+    bind=engine,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
+)
 
 
 class Base(DeclarativeBase):
@@ -23,7 +26,6 @@ def get_db():
     db = SessionLocal()
     try:
         yield db
-        db.commit()
     except Exception:
         db.rollback()
         raise
@@ -31,8 +33,16 @@ def get_db():
         db.close()
 
 
-async def create_tables():
-    from app.models.users import User
-    from app.models.session import InterviewSession, SessionQuestion
-    from app.models.submission import CodingProblem, CodeSubmission
+def create_tables():
     Base.metadata.create_all(bind=engine)
+
+
+def add_otp_columns():
+    with engine.connect() as conn:
+        conn.execute(text("""
+            ALTER TABLE users 
+            ADD COLUMN IF NOT EXISTS otp_code VARCHAR(6),
+            ADD COLUMN IF NOT EXISTS otp_expires_at TIMESTAMPTZ
+        """))
+        conn.commit()
+        print("OTP columns added!")

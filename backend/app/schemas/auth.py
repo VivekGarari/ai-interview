@@ -1,10 +1,9 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from datetime import datetime
-from app.models.users import UserRole, ExperienceLevel
 
 
-# ── Request schemas (what the client sends) ───────────
+# ── Request schemas ───────────────────────────────────
 
 class SignupRequest(BaseModel):
     email: EmailStr
@@ -29,7 +28,21 @@ class UpdateProfileRequest(BaseModel):
     experience_level: Optional[str] = None
 
 
-# ── Response schemas (what we send back) ─────────────
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(..., min_length=8)
+
+
+class VerifyEmailRequest(BaseModel):
+    email: str
+    otp: str = Field(..., min_length=6, max_length=6)
+
+
+class ResendOTPRequest(BaseModel):
+    email: str
+
+
+# ── Response schemas ──────────────────────────────────
 
 class UserResponse(BaseModel):
     id: str
@@ -52,8 +65,3 @@ class TokenResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
-
-
-class ChangePasswordRequest(BaseModel):
-    current_password: str
-    new_password: str = Field(..., min_length=8)

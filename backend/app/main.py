@@ -9,7 +9,7 @@ from app.routers import auth, interview, coding, progress, ws, video, exam
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_tables()
+    create_tables()
     print(f"✅ {settings.APP_NAME} started")
     yield
     print("👋 Shutting down...")

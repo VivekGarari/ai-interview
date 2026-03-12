@@ -47,6 +47,8 @@ export const authAPI = {
   me: () => api.get("/auth/me"),
   updateMe: (data) => api.patch("/auth/me", data),
   changePassword: (data) => api.post("/auth/change-password", data),
+  verifyEmail: (data) => api.post('/auth/verify-email', data),
+  resendOTP: (data) => api.post('/auth/resend-otp', data),
   logout: () => api.post('/auth/logout'),
 }
 
@@ -94,3 +96,13 @@ export const examAPI = {
   start: (data) => api.post('/exam/start', data),
   submit: (data) => api.post('/exam/submit', data),
 }
+
+// ── Resume ─────────────────────────────────────────────
+export const resumeAPI = {
+  analyze: (formData) => api.post('/resume/analyze', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+}
+
+// already in authAPI — adding verify methods
+// authAPI.verifyEmail and authAPI.resendOTP added below via patch

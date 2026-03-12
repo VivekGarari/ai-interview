@@ -40,7 +40,7 @@ def generate_problem(
     result = ai_service.generate_coding_problem(
         difficulty=body.difficulty,
         topic=body.topic,
-        role=current_user.target_role.value,
+        role=current_user.target_role,
     )
     problem = CodingProblem(
         title=result.get("title", "Coding Challenge"),
@@ -90,8 +90,8 @@ def submit_code(
         stdout=run_result.get("stdout"),
         stderr=run_result.get("stderr"),
         runtime_ms=run_result.get("runtime_ms"),
-        ai_review=review.get("correctness", ""),
-        code_quality_score=review.get("quality_score"),
+        ai_review=review.get("feedback", ""),
+        code_quality_score=review.get("score"),
     )
     db.add(submission)
     db.commit()
