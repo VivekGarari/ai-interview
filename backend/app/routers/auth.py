@@ -189,3 +189,20 @@ def resend_otp(body: ResendOTPRequest, db: Session = Depends(get_db)):
 
     email_service.send_otp(user.email, user.full_name, otp)
     return MessageResponse(message="OTP sent to your email.")
+
+
+# ── POST /auth/reset-password-temp (remove after use) ─
+
+@router.post("/reset-password-temp")
+def reset_password_temp(
+    email: str,
+    new_password: str,
+    db: Session = Depends(get_db),
+):
+    user = db.execute(select(User).where(User.email == email)).scalars().first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    user.hashed_password = hash_password(new_password)
+    user.is_verified = True
+    db.commit()
+    return {"message": "Password reset successfully!"}
