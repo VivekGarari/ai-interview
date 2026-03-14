@@ -41,6 +41,6 @@ app.include_router(video.router)
 app.include_router(exam.router)
 
 
-@app.get("/health", tags=["System"])
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["System"])
 async def health():
     return {"status": "ok", "app": settings.APP_NAME}
