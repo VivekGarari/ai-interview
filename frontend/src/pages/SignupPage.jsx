@@ -16,7 +16,7 @@ export default function SignupPage() {
     try {
       await signup({ ...form, target_role: 'software_engineer', experience_level: 'junior' })
       toast.success('Account created!')
-      navigate('/settings')
+      navigate('/')
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Signup failed')
     } finally {
