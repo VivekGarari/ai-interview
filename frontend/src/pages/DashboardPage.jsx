@@ -78,7 +78,7 @@ export default function DashboardPage() {
       <h2 className="text-lg font-semibold text-white mb-4">Start Practicing</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <ActionCard icon={MessageSquare} color="bg-indigo-600"
-          title="Text Interview" desc="AI interviews via text chat"
+          title="Concept Review" desc="AI interviews via text chat"
           onClick={() => navigate('/interview')} />
         <ActionCard icon={Video} color="bg-rose-600"
           title="Video Interview" desc="Real-time voice + camera interview"

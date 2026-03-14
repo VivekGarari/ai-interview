@@ -108,6 +108,7 @@ def submit_answer(
 
     question.score = evaluation["score"]
     question.ai_feedback = evaluation["feedback"]
+    question.model_answer = evaluation.get("model_answer")
     question.follow_up_asked = evaluation["follow_up"]
 
     # Generate next question (max 5 questions per session)

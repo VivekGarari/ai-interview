@@ -3,13 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.core.config import settings
-from app.core.database import create_tables
+from app.core.database import create_tables, add_model_answer_column
 from app.routers import auth, interview, coding, progress, ws, video, exam
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_tables()
+    add_model_answer_column()
     print(f"✅ {settings.APP_NAME} started")
     yield
     print("👋 Shutting down...")

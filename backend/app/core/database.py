@@ -46,3 +46,13 @@ def add_otp_columns():
         """))
         conn.commit()
         print("OTP columns added!")
+
+
+def add_model_answer_column():
+    with engine.connect() as conn:
+        conn.execute(text("""
+            ALTER TABLE session_questions
+            ADD COLUMN IF NOT EXISTS model_answer TEXT
+        """))
+        conn.commit()
+        print("model_answer column added!")

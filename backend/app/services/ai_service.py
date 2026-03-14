@@ -42,11 +42,13 @@ Candidate's Answer: {answer}
 Evaluate this answer and respond in this exact format:
 SCORE: [0-10]
 FEEDBACK: [2-3 sentences of constructive feedback]
+MODEL_ANSWER: [A concise ideal answer to this question in 2-4 sentences]
 FOLLOW_UP: [One follow-up question to dig deeper, or "None" if answer was complete]"""
         response = self._chat(system, user)
         score = 5.0
         feedback = "Good attempt."
         follow_up = None
+        model_answer = None
         for line in response.strip().split("\n"):
             if line.startswith("SCORE:"):
                 try:
@@ -55,10 +57,12 @@ FOLLOW_UP: [One follow-up question to dig deeper, or "None" if answer was comple
                     score = 5.0
             elif line.startswith("FEEDBACK:"):
                 feedback = line.replace("FEEDBACK:", "").strip()
+            elif line.startswith("MODEL_ANSWER:"):
+                model_answer = line.replace("MODEL_ANSWER:", "").strip()
             elif line.startswith("FOLLOW_UP:"):
                 fu = line.replace("FOLLOW_UP:", "").strip()
                 follow_up = None if fu.lower() == "none" else fu
-        return {"score": score, "feedback": feedback, "follow_up": follow_up}
+        return {"score": score, "feedback": feedback, "follow_up": follow_up, "model_answer": model_answer}
 
     def generate_feedback_report(self, session_data: dict) -> dict:
         questions_summary = "\n".join([

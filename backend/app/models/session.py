@@ -69,6 +69,7 @@ class SessionQuestion(Base):
 
     score: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     ai_feedback: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    model_answer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     follow_up_asked: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
     response_time_seconds: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

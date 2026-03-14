@@ -9,7 +9,7 @@ from app.models.session import InterviewType, SessionStatus
 class StartSessionRequest(BaseModel):
     interview_type: InterviewType
     target_role: str = Field(min_length=2, max_length=100)
-    difficulty: str = "medium"  # easy / medium / hard
+    difficulty: str = "medium"
 
 
 class SubmitAnswerRequest(BaseModel):
@@ -29,6 +29,11 @@ class QuestionResponse(BaseModel):
     id: str
     question_text: str
     order_index: int
+    answer_text: Optional[str] = None
+    score: Optional[float] = None
+    ai_feedback: Optional[str] = None
+    model_answer: Optional[str] = None
+    follow_up_asked: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -38,6 +43,7 @@ class AnswerFeedbackResponse(BaseModel):
     score: float
     feedback: str
     follow_up: Optional[str] = None
+    model_answer: Optional[str] = None
 
 
 class SessionResponse(BaseModel):
