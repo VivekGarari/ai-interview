@@ -32,22 +32,17 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="An account with this email already exists.")
 
-    otp = str(random.randint(100000, 999999))
     user = User(
         email=body.email,
         hashed_password=hash_password(body.password),
         full_name=body.full_name,
         target_role=body.target_role,
         experience_level=body.experience_level,
-        is_verified=False,
-        otp_code=otp,
-        otp_expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
+        is_verified=True,
     )
     db.add(user)
     db.commit()
     db.refresh(user)
-
-    email_service.send_otp(user.email, user.full_name, otp)
 
     return TokenResponse(
         access_token=create_access_token(user.id),
