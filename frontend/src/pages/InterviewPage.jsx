@@ -1,272 +1,293 @@
-import { useState, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  MessageSquare, Video, Code2, TrendingUp, Trophy,
-  Target, Clock, Zap, ChevronRight, BarChart2
-} from 'lucide-react'
-import { progressAPI } from '../services/api'
+import { Send, Loader2, ChevronRight, Trophy, MessageSquare, RotateCcw, CheckCircle } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { interviewAPI } from '../services/api'
 import useAuthStore from '../store/authStore'
 
-// Simple bar chart using divs (no extra library needed)
-function ScoreBarChart({ data }) {
-  if (!data?.length) return <p className="text-sm text-gray-500 text-center py-6">No data yet</p>
-  const max = 10
+const TYPES = [
+  { value: 'behavioral', label: 'Behavioral', desc: 'Situation-based questions' },
+  { value: 'technical', label: 'Technical', desc: 'System design & concepts' },
+  { value: 'system_design', label: 'System Design', desc: 'Architecture & scalability' },
+  { value: 'hr', label: 'HR Round', desc: 'Culture fit & motivation' },
+]
+
+const DIFFICULTIES = ['easy', 'medium', 'hard']
+
+function ScoreBar({ score }) {
+  const color = score >= 7 ? 'bg-emerald-500' : score >= 5 ? 'bg-amber-500' : 'bg-red-500'
   return (
-    <div className="space-y-2">
-      {data.map((d, i) => (
-        <div key={i} className="flex items-center gap-3">
-          <p className="text-xs text-gray-400 w-20 truncate shrink-0">{d.label}</p>
-          <div className="flex-1 h-5 bg-gray-800 rounded-full overflow-hidden">
-            <div
-              className={`h-full rounded-full transition-all duration-700 ${d.score >= 7 ? 'bg-emerald-500' : d.score >= 5 ? 'bg-amber-500' : 'bg-red-500'}`}
-              style={{ width: `${(d.score / max) * 100}%` }}
-            />
-          </div>
-          <p className={`text-xs font-bold w-8 text-right ${d.score >= 7 ? 'text-emerald-400' : d.score >= 5 ? 'text-amber-400' : 'text-red-400'}`}>
-            {d.score}
-          </p>
+    <div className="mt-2">
+      <div className="flex justify-between text-xs text-gray-400 mb-1">
+        <span>Score</span>
+        <span className={score >= 7 ? 'text-emerald-400' : score >= 5 ? 'text-amber-400' : 'text-red-400'}>
+          {score}/10
+        </span>
+      </div>
+      <div className="h-1.5 bg-gray-700 rounded-full overflow-hidden">
+        <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width: `${score * 10}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function FeedbackCard({ feedback }) {
+  return (
+    <div className="mt-3 bg-gray-800/60 border border-gray-700 rounded-xl p-4 space-y-2">
+      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">AI Feedback</p>
+      <p className="text-sm text-gray-300 leading-relaxed">{feedback.feedback}</p>
+      <ScoreBar score={feedback.score} />
+      {feedback.follow_up && (
+        <div className="mt-3 pt-3 border-t border-gray-700">
+          <p className="text-xs text-indigo-400 font-medium mb-1">Follow-up question:</p>
+          <p className="text-sm text-gray-300 italic">"{feedback.follow_up}"</p>
         </div>
-      ))}
+      )}
     </div>
   )
 }
 
-// Line sparkline using SVG
-function ScoreSparkline({ scores }) {
-  if (!scores?.length || scores.length < 2) return (
-    <p className="text-xs text-gray-500 text-center py-4">Complete more sessions to see trend</p>
-  )
-  const w = 300, h = 60, pad = 8
-  const min = Math.min(...scores) - 1
-  const max = Math.max(...scores) + 1
-  const points = scores.map((s, i) => {
-    const x = pad + (i / (scores.length - 1)) * (w - pad * 2)
-    const y = h - pad - ((s - min) / (max - min)) * (h - pad * 2)
-    return `${x},${y}`
-  })
-  const lastScore = scores[scores.length - 1]
-  const trend = scores.length > 1 ? lastScore - scores[scores.length - 2] : 0
-
+function ReportModal({ report, onClose, onRestart }) {
   return (
-    <div>
-      <svg viewBox={`0 0 ${w} ${h}`} className="w-full">
-        <polyline fill="none" stroke="#6366f1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-          points={points.join(' ')} />
-        {points.map((p, i) => {
-          const [x, y] = p.split(',')
-          return <circle key={i} cx={x} cy={y} r="3" fill="#6366f1" />
-        })}
-      </svg>
-      <div className="flex items-center justify-between mt-1">
-        <p className="text-xs text-gray-500">Last {scores.length} sessions</p>
-        <p className={`text-xs font-medium ${trend > 0 ? 'text-emerald-400' : trend < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-          {trend > 0 ? `↑ +${trend.toFixed(1)}` : trend < 0 ? `↓ ${trend.toFixed(1)}` : '→ Stable'}
-        </p>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg p-8">
+        <div className="text-center mb-6">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-600/20 mb-4">
+            <Trophy size={28} className="text-indigo-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-white">Interview Complete!</h2>
+          <div className="mt-2">
+            <span className={`text-4xl font-black ${report.overall_score >= 7 ? 'text-emerald-400' : report.overall_score >= 5 ? 'text-amber-400' : 'text-red-400'}`}>
+              {report.overall_score}
+            </span>
+            <span className="text-xl text-gray-500">/10</span>
+          </div>
+        </div>
+        <p className="text-gray-300 text-sm leading-relaxed mb-6 text-center">{report.summary}</p>
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-gray-800 rounded-xl p-4">
+            <p className="text-xs text-emerald-400 font-semibold uppercase tracking-wider mb-2">Strengths</p>
+            <ul className="space-y-1.5">
+              {report.strengths?.map((s, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                  <CheckCircle size={12} className="text-emerald-400 mt-0.5 shrink-0" />{s}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="bg-gray-800 rounded-xl p-4">
+            <p className="text-xs text-amber-400 font-semibold uppercase tracking-wider mb-2">Improve</p>
+            <ul className="space-y-1.5">
+              {report.improvements?.map((s, i) => (
+                <li key={i} className="flex items-start gap-2 text-xs text-gray-300">
+                  <ChevronRight size={12} className="text-amber-400 mt-0.5 shrink-0" />{s}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 bg-gray-800 hover:bg-gray-700 text-white rounded-xl text-sm font-medium transition-colors">
+            View History
+          </button>
+          <button onClick={onRestart} className="flex-1 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2">
+            <RotateCcw size={14} />New Interview
+          </button>
+        </div>
       </div>
     </div>
   )
 }
 
-// Donut chart
-function DonutChart({ value, max = 10, size = 80, color = '#6366f1' }) {
-  const r = (size - 10) / 2
-  const circ = 2 * Math.PI * r
-  const dash = (value / max) * circ
-  return (
-    <div className="relative" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1f2937" strokeWidth={10} />
-        <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10}
-          strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
-          style={{ transition: 'stroke-dasharray 1s ease' }} />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <p className="text-base font-black" style={{ color }}>{value || '—'}</p>
-      </div>
-    </div>
-  )
-}
-
-export default function DashboardPage() {
+export default function InterviewPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
-  const [dashboard, setDashboard] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [phase, setPhase] = useState('setup')
+  const [config, setConfig] = useState({
+    interview_type: 'behavioral',
+    target_role: user?.target_role?.replace(/_/g, ' ') || 'software engineer',
+    difficulty: 'medium',
+  })
+  const [session, setSession] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [currentQuestion, setCurrentQuestion] = useState(null)
+  const [answer, setAnswer] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [report, setReport] = useState(null)
+  const [questionsAnswered, setQuestionsAnswered] = useState(0)
+  const bottomRef = useRef(null)
 
-  useEffect(() => {
-    progressAPI.dashboard()
-      .then(r => setDashboard(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  const stats = dashboard?.interview_stats
-  const recentSessions = dashboard?.recent_sessions || []
+  const startInterview = async () => {
+    setLoading(true)
+    try {
+      const { data } = await interviewAPI.start({
+        interview_type: config.interview_type,
+        target_role: config.target_role,
+        difficulty: config.difficulty,
+      })
+      setSession(data)
+      setCurrentQuestion(data.question)
+      setMessages([{ type: 'question', text: data.question.question_text, id: data.question.id }])
+      setPhase('interview')
+    } catch { toast.error('Failed to start interview') }
+    finally { setLoading(false) }
+  }
 
-  // Build bar chart data from recent sessions
-  const barData = recentSessions
-    .filter(s => s.score)
-    .slice(0, 6)
-    .map((s, i) => ({
-      label: `#${recentSessions.length - i}`,
-      score: parseFloat(s.score),
-    }))
-    .reverse()
+  const submitAnswer = async () => {
+    if (!answer.trim() || loading) return
+    const myAnswer = answer.trim()
+    setAnswer('')
+    setLoading(true)
+    setMessages((m) => [...m, { type: 'answer', text: myAnswer }])
+    try {
+      const { data } = await interviewAPI.answer({
+        session_id: session.session_id,
+        question_id: currentQuestion.id,
+        answer_text: myAnswer,
+      })
+      setQuestionsAnswered(data.questions_answered + 1)
+      setMessages((m) => [...m, { type: 'feedback', data: data.feedback }])
+      if (data.session_complete || data.questions_answered >= 4) {
+        const { data: rep } = await interviewAPI.end({ session_id: session.session_id })
+        setReport(rep)
+        setPhase('done')
+      } else {
+        setCurrentQuestion(data.next_question)
+        setMessages((m) => [...m, { type: 'question', text: data.next_question.question_text, id: data.next_question.id }])
+      }
+    } catch { toast.error('Failed to submit answer') }
+    finally { setLoading(false) }
+  }
 
-  // Scores array for sparkline
-  const scoreHistory = recentSessions
-    .filter(s => s.score)
-    .map(s => parseFloat(s.score))
-    .reverse()
+  const restart = () => {
+    setPhase('setup'); setSession(null); setMessages([])
+    setCurrentQuestion(null); setAnswer(''); setReport(null); setQuestionsAnswered(0)
+  }
 
-  // Type breakdown
-  const typeBreakdown = recentSessions.reduce((acc, s) => {
-    acc[s.type] = (acc[s.type] || 0) + 1
-    return acc
-  }, {})
-
-  const quickActions = [
-    { label: 'Concept Review', icon: MessageSquare, color: 'bg-indigo-600', path: '/interview' },
-    { label: 'Video Interview', icon: Video, color: 'bg-rose-600', path: '/video-interview' },
-    { label: 'Coding Challenge', icon: Code2, color: 'bg-purple-600', path: '/coding' },
-  ]
-
-  return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+  if (phase === 'setup') return (
+    <div className="p-8 max-w-2xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-white">Concept Review</h1>
+        <p className="text-gray-400 mt-1">Configure your AI interview session</p>
+      </div>
+      <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">
-            Welcome back, {user?.full_name?.split(' ')[0]} 👋
-          </h1>
-          <p className="text-gray-400 mt-0.5 text-sm capitalize">
-            {user?.target_role?.replace(/_/g, ' ')} · {user?.experience_level}
-          </p>
+          <label className="block text-sm font-medium text-gray-300 mb-3">Interview Type</label>
+          <div className="grid grid-cols-2 gap-3">
+            {TYPES.map((t) => (
+              <button key={t.value} onClick={() => setConfig({ ...config, interview_type: t.value })}
+                className={`p-3 rounded-xl border text-left transition-all ${config.interview_type === t.value ? 'border-indigo-500 bg-indigo-600/10' : 'border-gray-700 hover:border-gray-600'}`}>
+                <p className="text-sm font-medium text-white">{t.label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{t.desc}</p>
+              </button>
+            ))}
+          </div>
         </div>
-        <button onClick={() => navigate('/history')}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm transition-colors">
-          <BarChart2 size={15} />View Full History
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Target Role</label>
+          <input value={config.target_role} onChange={(e) => setConfig({ ...config, target_role: e.target.value })}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors"
+            placeholder="e.g. Software Engineer" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-3">Difficulty</label>
+          <div className="flex gap-3">
+            {DIFFICULTIES.map((d) => (
+              <button key={d} onClick={() => setConfig({ ...config, difficulty: d })}
+                className={`flex-1 py-2 rounded-lg text-sm font-medium capitalize transition-all ${config.difficulty === d ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}>
+                {d}
+              </button>
+            ))}
+          </div>
+        </div>
+        <button onClick={startInterview} disabled={loading}
+          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-3 rounded-xl transition-colors flex items-center justify-center gap-2">
+          {loading ? <Loader2 size={18} className="animate-spin" /> : <MessageSquare size={18} />}
+          {loading ? 'Starting...' : 'Start Interview'}
         </button>
       </div>
+    </div>
+  )
 
-      {/* Quick actions */}
-      <div className="grid grid-cols-3 gap-4">
-        {quickActions.map(({ label, icon: Icon, color, path }) => (
-          <button key={path} onClick={() => navigate(path)}
-            className="flex items-center gap-3 p-4 bg-gray-900 border border-gray-800 rounded-xl hover:border-gray-600 transition-all group">
-            <div className={`w-10 h-10 ${color} rounded-xl flex items-center justify-center shrink-0`}>
-              <Icon size={18} className="text-white" />
-            </div>
-            <div className="text-left">
-              <p className="text-sm font-medium text-white">{label}</p>
-              <p className="text-xs text-gray-500">Start now</p>
-            </div>
-            <ChevronRight size={14} className="text-gray-600 ml-auto group-hover:text-gray-400 transition-colors" />
-          </button>
-        ))}
+  return (
+    <div className="flex flex-col h-full">
+      <div className="px-6 py-4 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <MessageSquare size={18} className="text-indigo-400" />
+          <span className="font-medium text-white capitalize">{config.interview_type.replace('_', ' ')} Interview</span>
+          <span className="text-xs px-2 py-0.5 bg-gray-800 text-gray-400 rounded-full capitalize">{config.difficulty}</span>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-400">{questionsAnswered}/5 answered</span>
+          <div className="w-24 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+            <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${(questionsAnswered / 5) * 100}%` }} />
+          </div>
+          <button onClick={restart} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">End</button>
+        </div>
       </div>
 
-      {/* Score cards row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Sessions', value: stats?.total_sessions || 0, icon: Clock, color: '#6366f1' },
-          { label: 'Avg Score', value: stats?.average_score || 0, icon: TrendingUp, color: '#10b981', max: 10 },
-          { label: 'Best Score', value: stats?.best_score || 0, icon: Trophy, color: '#f59e0b', max: 10 },
-          { label: 'Completed', value: stats?.completed_sessions || 0, icon: Target, color: '#8b5cf6' },
-        ].map(({ label, value, icon: Icon, color, max }) => (
-          <div key={label} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-4">
-            {max ? (
-              <DonutChart value={value} max={max} size={64} color={color} />
-            ) : (
-              <div className="w-16 h-16 rounded-full flex items-center justify-center shrink-0" style={{ background: `${color}20` }}>
-                <p className="text-xl font-black" style={{ color }}>{value}</p>
+      <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+        {messages.map((msg, i) => {
+          if (msg.type === 'question') return (
+            <div key={i} className="flex gap-3 max-w-2xl">
+              <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0 mt-1">
+                <MessageSquare size={14} className="text-white" />
               </div>
-            )}
-            <div>
-              <p className="text-xs text-gray-400">{label}</p>
-              <Icon size={14} className="mt-1" style={{ color }} />
+              <div className="bg-gray-900 border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
+                <p className="text-sm text-gray-300 leading-relaxed">{msg.text}</p>
+              </div>
+            </div>
+          )
+          if (msg.type === 'answer') return (
+            <div key={i} className="flex gap-3 max-w-2xl ml-auto flex-row-reverse">
+              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center shrink-0 mt-1 text-sm font-bold text-white">
+                {user?.full_name?.[0]?.toUpperCase()}
+              </div>
+              <div className="bg-indigo-600/20 border border-indigo-500/30 rounded-2xl rounded-tr-sm px-4 py-3">
+                <p className="text-sm text-gray-200 leading-relaxed">{msg.text}</p>
+              </div>
+            </div>
+          )
+          if (msg.type === 'feedback') return (
+            <div key={i} className="max-w-2xl">
+              <FeedbackCard feedback={msg.data} />
+            </div>
+          )
+        })}
+        {loading && (
+          <div className="flex gap-3 max-w-2xl">
+            <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center shrink-0">
+              <Loader2 size={14} className="text-white animate-spin" />
+            </div>
+            <div className="bg-gray-900 border border-gray-800 rounded-2xl rounded-tl-sm px-4 py-3">
+              <div className="flex gap-1">
+                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                <span className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+              </div>
             </div>
           </div>
-        ))}
+        )}
+        <div ref={bottomRef} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Score trend */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <TrendingUp size={15} className="text-indigo-400" />
-            <p className="text-sm font-semibold text-white">Score Trend</p>
-          </div>
-          <ScoreSparkline scores={scoreHistory} />
+      <div className="px-6 py-4 border-t border-gray-800 bg-gray-900">
+        <div className="flex gap-3 max-w-3xl mx-auto">
+          <textarea value={answer} onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitAnswer() }}
+            disabled={loading} placeholder="Type your answer... (Ctrl+Enter to submit)" rows={3}
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 transition-colors resize-none text-sm" />
+          <button onClick={submitAnswer} disabled={loading || !answer.trim()}
+            className="px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded-xl transition-colors flex items-center justify-center">
+            <Send size={18} />
+          </button>
         </div>
-
-        {/* Score by session */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <BarChart2 size={15} className="text-purple-400" />
-            <p className="text-sm font-semibold text-white">Recent Scores</p>
-          </div>
-          <ScoreBarChart data={barData} />
-        </div>
+        <p className="text-xs text-gray-600 text-center mt-2">Ctrl+Enter to submit</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {/* Interview type breakdown */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-4">
-            <Zap size={15} className="text-amber-400" />
-            <p className="text-sm font-semibold text-white">Practice Breakdown</p>
-          </div>
-          {Object.keys(typeBreakdown).length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">No sessions yet</p>
-          ) : (
-            <div className="space-y-2">
-              {Object.entries(typeBreakdown).map(([type, count]) => {
-                const total = recentSessions.length
-                const pct = Math.round((count / total) * 100)
-                return (
-                  <div key={type} className="flex items-center gap-3">
-                    <p className="text-xs text-gray-400 w-28 capitalize shrink-0">{type.replace(/_/g, ' ')}</p>
-                    <div className="flex-1 h-4 bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${pct}%` }} />
-                    </div>
-                    <p className="text-xs text-gray-400 w-8 text-right">{count}</p>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Recent sessions */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-semibold text-white">Recent Sessions</p>
-            <button onClick={() => navigate('/history')} className="text-xs text-indigo-400 hover:text-indigo-300">View all</button>
-          </div>
-          {recentSessions.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">No sessions yet — start practicing!</p>
-          ) : (
-            <div className="space-y-2">
-              {recentSessions.slice(0, 4).map((s, i) => (
-                <div key={i} className="flex items-center justify-between py-2 border-b border-gray-800 last:border-0">
-                  <div>
-                    <p className="text-xs font-medium text-white capitalize">{s.type?.replace(/_/g, ' ')}</p>
-                    <p className="text-xs text-gray-500">{s.date}</p>
-                  </div>
-                  {s.score ? (
-                    <span className={`text-sm font-bold ${s.score >= 7 ? 'text-emerald-400' : s.score >= 5 ? 'text-amber-400' : 'text-red-400'}`}>
-                      {s.score}/10
-                    </span>
-                  ) : (
-                    <span className="text-xs text-gray-600">—</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      {report && <ReportModal report={report} onClose={() => navigate('/history')} onRestart={restart} />}
     </div>
   )
 }
