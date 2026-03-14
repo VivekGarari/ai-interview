@@ -5,7 +5,7 @@ import { ROLES } from '../../data/options'
 
 const nav = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard', exact: true },
-  { to: '/interview', icon: MessageSquare, label: 'Text Interview' },
+  { to: '/interview', icon: MessageSquare, label: 'Concept Review' },
   { to: '/video-interview', icon: Video, label: 'Video Interview' },
   { to: '/coding', icon: Code2, label: 'Coding' },
   { to: '/history', icon: History, label: 'History' },
