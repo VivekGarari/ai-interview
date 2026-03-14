@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: 'https://proctoai-backend.onrender.com',
   headers: { 'Content-Type': 'application/json' },
 })
 
@@ -20,7 +20,7 @@ api.interceptors.response.use(
       const refresh = localStorage.getItem('refresh_token')
       if (refresh) {
         try {
-          const { data } = await axios.post('http://localhost:8000/auth/refresh', {
+          const { data } = await axios.post('https://proctoai-backend.onrender.com/auth/refresh', {
             refresh_token: refresh,
           })
           localStorage.setItem('access_token', data.access_token)
@@ -71,7 +71,7 @@ export const videoAPI = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
   end: (sessionId) => api.post(`/video/end?session_id=${sessionId}`),
-  questionAudioUrl: (questionId) => `http://localhost:8000/video/question/${questionId}/audio`,
+  questionAudioUrl: (questionId) => `https://proctoai-backend.onrender.com/video/question/${questionId}/audio`,
 }
 
 // ── Coding ────────────────────────────────────────────
