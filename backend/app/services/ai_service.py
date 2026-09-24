@@ -1,24 +1,35 @@
 import json
-from groq import Groq
-from app.core.config import settings
+from app.services.orchestrator import AIOrchestrator
+from app.services.providers import AIProvider, create_provider
 
 
 class AIService:
     def __init__(self):
-        self.client = Groq(api_key=settings.GROQ_API_KEY)
-        self.model = settings.AI_MODEL
+        self.orchestrator = AIOrchestrator()
+        self.provider: AIProvider = create_provider()
+        self.model = self.provider.model
+        self.default_provider = self.provider.name
 
-    def _chat(self, system: str, user: str) -> str:
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": user},
-            ],
-            temperature=0.7,
-            max_tokens=1000,
+    def get_provider_for_task(self, task_type: str, capabilities: dict | None = None) -> str:
+        return self.orchestrator.select_provider(task_type, capabilities)
+
+    def get_capabilities(self) -> dict:
+        return self.orchestrator.get_capabilities()
+
+    def _chat(
+        self,
+        system: str,
+        user: str,
+        *,
+        temperature: float = 0.7,
+        max_tokens: int = 1000,
+    ) -> str:
+        return self.provider.chat(
+            system,
+            user,
+            temperature=temperature,
+            max_tokens=max_tokens,
         )
-        return response.choices[0].message.content.strip()
 
     def generate_question(self, role: str, interview_type: str, history: list[str], difficulty: str = "medium") -> str:
         history_text = "\n".join(history[-4:]) if history else "No previous questions."
@@ -119,13 +130,7 @@ Return ONLY a JSON object:
   "solution": "<reference solution in python>",
   "hints": ["<hint 1>", "<hint 2>"]
 }}"""
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=2000,
-        )
-        text = response.choices[0].message.content.strip()
+        text = self._chat("", prompt, temperature=0.7, max_tokens=2000)
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -160,13 +165,7 @@ Return ONLY a JSON object:
   "feedback": "<2-3 sentence review>",
   "improvements": ["<improvement 1>", "<improvement 2>"]
 }}"""
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=600,
-        )
-        text = response.choices[0].message.content.strip()
+        text = self._chat("", prompt, temperature=0.3, max_tokens=600)
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -193,13 +192,7 @@ For MCQ questions also include:
 - "options": list of exactly 4 strings like ["A. option1", "B. option2", "C. option3", "D. option4"]
 
 Return ONLY the JSON array, no markdown, no extra text."""
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
-            max_tokens=4000,
-        )
-        text = response.choices[0].message.content.strip()
+        text = self._chat("", prompt, temperature=0.7, max_tokens=4000)
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -219,13 +212,7 @@ Student answer: {user_answer}
 Grade this answer from 0-10 based on correctness, completeness, and clarity.
 Return ONLY a JSON object:
 {{"score": <0-10>, "feedback": "<1-2 sentence feedback>"}}"""
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=200,
-        )
-        text = response.choices[0].message.content.strip()
+        text = self._chat("", prompt, temperature=0.3, max_tokens=200)
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -248,13 +235,7 @@ Return ONLY a JSON object:
   "weaknesses": ["<weakness 1>", "<weakness 2>"],
   "recommendation": "<1-2 sentence study recommendation>"
 }}"""
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.5,
-            max_tokens=400,
-        )
-        text = response.choices[0].message.content.strip()
+        text = self._chat("", prompt, temperature=0.5, max_tokens=400)
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
@@ -315,13 +296,7 @@ Rules:
 - Be specific and actionable
 - Return ONLY the JSON, no markdown fences"""
 
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{{"role": "user", "content": prompt}}],
-            temperature=0.4,
-            max_tokens=3000,
-        )
-        text = response.choices[0].message.content.strip()
+        text = self._chat("", prompt, temperature=0.4, max_tokens=3000)
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):

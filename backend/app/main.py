@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.core.database import create_tables, add_model_answer_column
-from app.routers import auth, interview, coding, progress, ws, video, exam
+from app.routers import auth, interview, coding, progress, ws, video, exam, ai
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ app.include_router(progress.router)
 app.include_router(ws.router)
 app.include_router(video.router)
 app.include_router(exam.router)
+app.include_router(ai.router)
 
 
 @app.api_route("/health", methods=["GET", "HEAD"], tags=["System"])

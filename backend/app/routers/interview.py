@@ -7,6 +7,7 @@ from app.core.security import get_current_user
 from app.models.users import User
 from app.models.session import InterviewSession, SessionQuestion, SessionStatus
 from app.services.ai_service import ai_service
+from app.services.question_service import get_random_question
 from app.schemas.interview import (
     StartSessionRequest, SubmitAnswerRequest, EndSessionRequest,
     SessionResponse, QuestionResponse, AnswerFeedbackResponse,
@@ -14,6 +15,27 @@ from app.schemas.interview import (
 )
 
 router = APIRouter(prefix="/interview", tags=["Interview"])
+
+
+def _get_initial_question_text(
+    db: Session,
+    topic_id: str | None,
+    role: str,
+    interview_type: str,
+    difficulty: str,
+) -> str:
+    """Use a stored question only when an explicit topic is available."""
+    if topic_id:
+        question = get_random_question(db, topic_id=topic_id, difficulty=difficulty)
+        if question is not None:
+            return question.content
+
+    return ai_service.generate_question(
+        role=role,
+        interview_type=interview_type,
+        history=[],
+        difficulty=difficulty,
+    )
 
 
 # ── POST /interview/start ─────────────────────────────
@@ -36,11 +58,12 @@ def start_session(
     db.add(session)
     db.flush()
 
-    # Generate first question via AI
-    first_question_text = ai_service.generate_question(
+    # Use a stored question only when a future explicit topic context is available.
+    first_question_text = _get_initial_question_text(
+        db=db,
+        topic_id=None,
         role=body.target_role,
         interview_type=body.interview_type.value,
-        history=[],
         difficulty=body.difficulty,
     )
 

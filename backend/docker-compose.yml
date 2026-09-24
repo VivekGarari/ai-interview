@@ -4,9 +4,9 @@ services:
     container_name: interviewai_db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: yoonsab
-      POSTGRES_DB: interviewai
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-interviewai}
     ports:
       - "5432:5432"
     volumes:

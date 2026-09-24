@@ -128,7 +128,13 @@ backend/
 
 ## Environment Variables
 
-Create a `.env` file in the `backend/` directory:
+Copy `.env.example` to `.env` in the `backend/` directory, then fill in local secrets and
+deployment-specific values. `.env.example` is the safe configuration template; `.env` is local
+only and must not be committed.
+
+The backend loads configuration through `app/core/config.py` using pydantic-settings.
+
+Example values:
 
 ```env
 # Database

@@ -51,9 +51,14 @@ class CodeRunner:
                 "success": False,
             }
 
-        # If no API key, use simple local execution for Python only
+        # If no API key, fail safely — do NOT execute candidate code locally
         if not self.api_key:
-            return self._run_local(code, language)
+            return {
+                "stdout": None,
+                "stderr": "Code execution service is not configured. Contact support to enable coding challenges.",
+                "runtime_ms": None,
+                "success": False,
+            }
 
         try:
             # Submit to Judge0
@@ -84,59 +89,6 @@ class CodeRunner:
                 "success": result.get("status", {}).get("id") == 3,  # 3 = Accepted
             }
 
-        except Exception as e:
-            return {
-                "stdout": None,
-                "stderr": str(e),
-                "runtime_ms": None,
-                "success": False,
-            }
-
-    def _run_local(self, code: str, language: str) -> dict:
-        """
-        Simple local execution for Python (dev only, no sandbox).
-        Replace with Judge0 in production.
-        """
-        if language.lower() not in ("python", "python3"):
-            return {
-                "stdout": None,
-                "stderr": "Local execution only supports Python. Add a Judge0 API key for other languages.",
-                "runtime_ms": None,
-                "success": False,
-            }
-
-        import subprocess
-        import tempfile
-        import os
-
-        try:
-            with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as f:
-                f.write(code)
-                fname = f.name
-
-            start = time.time()
-            result = subprocess.run(
-                ["python", fname],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-            runtime = int((time.time() - start) * 1000)
-            os.unlink(fname)
-
-            return {
-                "stdout": result.stdout or None,
-                "stderr": result.stderr or None,
-                "runtime_ms": runtime,
-                "success": result.returncode == 0,
-            }
-        except subprocess.TimeoutExpired:
-            return {
-                "stdout": None,
-                "stderr": "Time limit exceeded (10 seconds)",
-                "runtime_ms": 10000,
-                "success": False,
-            }
         except Exception as e:
             return {
                 "stdout": None,

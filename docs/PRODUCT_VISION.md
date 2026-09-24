@@ -1,0 +1,241 @@
+# Product Vision — ProctoAI
+
+Status legend (used in all docs):
+- `[IMPLEMENTED]` — exists in the current codebase and is reachable through the app.
+- `[PARTIAL]` — a real feature exists but is incomplete, fragile, or divergent from the target contract.
+- `[V1]` — explicitly planned for the near-term V1 build (ProctoAI Interview Lab). Not built yet unless noted.
+- `[FUTURE]` — long-term planned capability (roadmap phase ≥ 2). Not built.
+- `[IDEA]` — noted possibility; no commitment. Should be treated as an open question, not a promise.
+
+---
+
+## 1. Purpose of this document
+
+This document records what ProctoAI is intended to become. It is deliberately product-level; the
+engineering breakdown lives in [Architecture](ARCHITECTURE.md) and the short-term scope in
+[V1_SCOPE](V1_SCOPE.md). Everything here that is not marked `[IMPLEMENTED]`/`[PARTIAL]` is a
+**target**, not a current capability.
+
+## 2. Problem statement
+
+Many candidates understand technical concepts and may even know the "right" answer, but perform
+poorly in interviews. The gap is not knowledge alone; it spans:
+
+- interview experience and familiarity with interview pressure
+- confidence and comfort under questioning
+- ability to communicate and structure an explanation
+- problem-solving under time constraints
+- conceptual depth (knowing *how* something works vs *why* it works)
+- awareness of personal strengths and weaknesses
+
+The problem is globally relevant: it is not specific to any country or market. ProctoAI is
+positioned around closing the **knowledge → performance** gap, not around any regional claim.
+
+## 3. Product goal
+
+ProctoAI's goal is to help a student:
+
+- learn technical concepts
+- understand concepts deeply (not just memorize)
+- identify gaps in conceptual understanding
+- practice explaining concepts aloud and in writing
+- practice interview-style questioning
+- experience realistic interview pressure
+- practice coding problems
+- receive structured, explainable feedback
+- understand strengths and weaknesses
+- improve measurably over time
+- become more comfortable and confident in technical interviews
+
+ProctoAI is **not merely an AI question generator**. The long-term product combines learning,
+assessment, interview simulation, coding practice and personalized feedback into one connected
+experience.
+
+## 4. Core product concept (long-term target)
+
+```
+Student
+  → Knowledge / Skill Profile
+    → Learning + Practice
+      → Concept Understanding
+        → Written Interview → Coding Practice → Video Interview
+          → Structured Evaluation
+            → Weakness Detection
+              → Personalized Recommendations
+                → Improvement
+```
+
+The defining differentiator: these stages are **connected**, not isolated features.
+
+Example of the kind of insight the product should eventually surface: a student can implement a
+binary search tree but cannot explain why it works, its complexity, what happens when it becomes
+unbalanced, how it compares with other structures, or why a particular implementation decision
+was made. The system should detect the difference between **implementation ability** and
+**conceptual depth**.
+
+### Target state: detection of understanding depth
+
+`[FUTURE]` The system should represent knowledge hierarchically and estimate whether a student
+has shallow, moderate, or strong understanding of a concept.
+
+## 5. Major product areas
+
+### 5.1 Learning / Concept Mastery `[FUTURE]`
+
+Students should eventually be able to study and practice:
+
+- programming fundamentals
+- computer science concepts
+- data structures
+- algorithms
+- databases
+- operating systems
+- networking
+- system design
+- language-specific concepts
+- role-specific technical topics
+- other interview-relevant subjects
+
+**Target knowledge hierarchy:**
+
+```
+Domain
+  → Topic
+    → Subtopic
+      → Skill / Concept
+        → Expected competencies
+```
+
+The system should eventually determine whether a student has shallow, moderate, or strong
+understanding of a concept and feed that into personalized recommendations.
+
+*Current reality:* topic/role knowledge is stored only as free-text strings on the user
+(`target_role`, `experience_level`) and a hard-coded frontend list of roles/topics
+(`frontend/src/data/options.js`). There is no taxonomy, no mastery model, and no concept tracking.
+
+### 5.2 Written AI Interview `[PARTIAL]`
+
+The AI should act as an **interviewer** that probes, not a list-of-questions display.
+
+**Target conversation shape:**
+
+```
+Question
+  → Student Answer
+    → Evaluation
+      → Follow-up Question
+        → Deeper Follow-up
+          → Further Evaluation
+```
+
+The system should be able to probe weak understanding by asking targeted follow-ups based on the
+previous answer.
+
+*Current reality:* a working text interview exists (see [Interview System](INTERVIEW_SYSTEM.md)),
+but follow-ups are a single uncollected text field and the next question is regenerated by the
+LLM without a controlled question store.
+
+### 5.3 Video AI Interview `[PARTIAL]`
+
+The long-term product should provide an AI-driven video interview experience.
+
+**Explicit non-goal:** judging a person's personality or appearance.
+
+**What it should evaluate** (interview *performance* signals, where technically and ethically
+appropriate): clarity, communication, answer structure, pacing, filler-word usage, verbal
+delivery, ability to explain reasoning, technical correctness, response quality.
+
+**Constraint on claims:** emotion, personality, confidence, eye-tracking and psychological
+inference are `[FUTURE]/experimental` capabilities. They must not be claimed as products unless
+actually implemented and validated. Current "confidence" scoring is a text-heuristic derived from
+the transcript (see [Video Interview](VIDEO_INTERVIEW.md)) and must be described as such.
+
+### 5.4 Coding Environment `[PARTIAL]`
+
+The platform should eventually include an integrated coding environment similar in broad concept
+to coding-practice platforms — **not** a LeetCode/Coding Ninjas clone. The differentiator is:
+
+**Coding + reasoning + explanation + interview preparation.**
+
+*Target capabilities:* generate/select problems; provide constraints and examples; execute
+submissions safely; evaluate correctness, complexity and code quality; evaluate reasoning; ask
+follow-up questions; integrate coding performance into the candidate's broader skill profile.
+
+*Current reality:* AI problem generation + code execution + AI text review exist. There is no
+test-case-based grading, no complexity evaluation, no reasoning evaluation, and coding results
+are not linked to a skill profile.
+
+### 5.5 Overall Evaluation `[FUTURE]` (with `[PARTIAL]` foundations)
+
+The platform should eventually produce multiple dimensions rather than a single opaque AI score:
+
+- technical knowledge
+- conceptual depth
+- problem solving
+- coding
+- communication
+- interview performance
+- answer quality
+- consistency
+- improvement over time
+
+The overall score should be **explainable and derived from structured evaluation components**, not
+from one semantic-similarity score or one LLM-generated number.
+
+*Current reality:* per-answer scores come from a single LLM call, and the session overall score
+comes from a separate LLM call (see [Evaluation System](EVALUATION_SYSTEM.md)). This is the model
+the target architecture explicitly wants to move away from.
+
+## 6. Company / B2B platform `[FUTURE]`
+
+A separate long-term product idea: companies/startups host technical assessments/interviews.
+
+**Conceptual flow:**
+
+```
+Company
+  → Create Assessment
+    → Configure Skills / Topics / Difficulty
+      → Questions / Coding Problems
+        → Invite Candidates
+          → Candidate Assessment
+            → Evaluation
+              → Company Dashboard
+                → Candidate Reports
+```
+
+Possible company functionality: company accounts, assessment creation, question
+selection/generation, coding assessments, written technical interviews, video interviews,
+candidate invitations, candidate tracking, evaluation reports, candidate comparison, assessment
+analytics, billing/subscriptions.
+
+**Boundary rule:** the student product and the company product must **not** be merged into one
+confusing domain model. They may share infrastructure and core assessment/evaluation engines, but
+must have clearly separated product boundaries, permissions, workflows, and data access.
+
+**Conceptual brand split (`[IDEA]`, used for clarity):**
+
+- **ProctoAI Learn** → students/candidates → learning, preparation, interview simulation, personal progress.
+- **ProctoAI Hire** → companies/recruiters → assessments, candidate evaluation, hiring workflows.
+
+See [Company Platform](COMPANY_PLATFORM.md).
+
+## 7. Market & launch posture
+
+- Launch **initially in India at relatively small scale for validation**.
+- Architect and design for an **international/global audience** from day one.
+- Do not frame the product around a claim that any country "is not serious about interview
+  preparation". Position the product around the globally relevant problem: the gap between
+  knowledge and interview performance.
+
+## 8. Non-goals at all stages
+
+- Not a replacement for a human recruiter or a hiring *decision* engine in V1.
+- Not a personality/judgment tool.
+- Not a content-mill of unvalidated AI questions — all questions must be validated, deduplicated
+  and versioned (see [Question System](QUESTION_SYSTEM.md)).
+
+## 9. How to build toward this vision
+
+Do **not** attempt to build the entire long-term vision at once. The recommended near-term scope
+is documented in [V1_SCOPE](V1_SCOPE.md) and sequenced in [PRODUCT_ROADMAP](PRODUCT_ROADMAP.md).
