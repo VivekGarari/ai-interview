@@ -129,30 +129,17 @@ export default function VideoInterviewPage() {
   useEffect(() => { questionsAnsweredRef.current = questionsAnswered }, [questionsAnswered])
   useEffect(() => { recordingTimeRef.current = recordingTime }, [recordingTime])
 
-  // Start camera (video only for display)
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-      cameraStreamRef.current = stream
-      if (videoRef.current) videoRef.current.srcObject = stream
-      return true
-    } catch {
-      toast.error('Camera access denied.')
-      setCameraOn(false)
-      return false
-    }
-  }
-
   const stopCamera = () => {
     cameraStreamRef.current?.getTracks().forEach(t => t.stop())
     cameraStreamRef.current = null
   }
 
   useEffect(() => {
+    const audio = audioRef.current
     return () => {
       stopCamera()
       clearInterval(timerRef.current)
-      audioRef.current.pause()
+      audio.pause()
     }
   }, [])
 
@@ -202,7 +189,7 @@ export default function VideoInterviewPage() {
   const startSession = async () => {
     setIsProcessing(true)
     try {
-      
+
       const { data } = await videoAPI.start(config)
       setSession(data)
       setCurrentQuestion(data.question)
@@ -238,8 +225,8 @@ export default function VideoInterviewPage() {
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus'
         : MediaRecorder.isTypeSupported('audio/webm')
-        ? 'audio/webm'
-        : ''
+          ? 'audio/webm'
+          : ''
 
       const recorder = new MediaRecorder(audioStream, mimeType ? { mimeType } : {})
       recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data) }
@@ -252,7 +239,7 @@ export default function VideoInterviewPage() {
       setRecordingTime(0)
       setStatus('Recording... speak your answer')
       timerRef.current = setInterval(() => setRecordingTime(t => t + 1), 1000)
-    } catch (err) {
+    } catch {
       toast.error('Microphone access failed. Please allow microphone permissions.')
     }
   }
@@ -325,7 +312,7 @@ export default function VideoInterviewPage() {
     setCanRecord(false); setRecordingTime(0); setStatus('Starting...')
   }
 
-  const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`
+  const formatTime = s => `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`
 
   // ── Setup ─────────────────────────────────────────
   if (phase === 'setup') return (
@@ -388,7 +375,7 @@ export default function VideoInterviewPage() {
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-400">{questionsAnswered}/5</span>
           <div className="w-20 h-1 bg-gray-800 rounded-full overflow-hidden">
-            <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${(questionsAnswered/5)*100}%` }} />
+            <div className="h-full bg-rose-500 rounded-full transition-all" style={{ width: `${(questionsAnswered / 5) * 100}%` }} />
           </div>
           <button onClick={restart} className="text-xs text-gray-500 hover:text-red-400 transition-colors">End</button>
         </div>
@@ -428,11 +415,11 @@ export default function VideoInterviewPage() {
               <p className="text-sm font-medium text-white">AI Interviewer</p>
               {isPlayingAudio
                 ? <div className="flex gap-0.5 mt-1.5 items-end h-4">
-                    {[...Array(8)].map((_, i) => (
-                      <div key={i} className="w-1 bg-indigo-400 rounded-full animate-bounce"
-                        style={{ height: `${6 + (i % 3) * 4}px`, animationDelay: `${i * 80}ms` }} />
-                    ))}
-                  </div>
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="w-1 bg-indigo-400 rounded-full animate-bounce"
+                      style={{ height: `${6 + (i % 3) * 4}px`, animationDelay: `${i * 80}ms` }} />
+                  ))}
+                </div>
                 : <p className="text-xs text-gray-400 truncate mt-0.5">{status}</p>
               }
             </div>
@@ -452,11 +439,10 @@ export default function VideoInterviewPage() {
 
             {!isRecording ? (
               <button onClick={startRecording} disabled={!canRecord || isProcessing}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all ${
-                  canRecord && !isProcessing
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-medium text-sm transition-all ${canRecord && !isProcessing
                     ? 'bg-rose-600 hover:bg-rose-500 text-white hover:scale-105'
                     : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}>
+                  }`}>
                 <Mic size={15} />
                 {isProcessing ? 'Processing...' : canRecord ? 'Record Answer' : 'Wait...'}
               </button>
@@ -519,7 +505,7 @@ export default function VideoInterviewPage() {
               {Object.keys(feedback.filler_words_found || {}).length > 0 && (
                 <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-3">
                   <p className="text-xs text-amber-400 font-medium mb-1">Filler words detected:</p>
-                  <p className="text-xs text-gray-300">{Object.entries(feedback.filler_words_found).map(([w,c]) => `"${w}" ×${c}`).join(', ')}</p>
+                  <p className="text-xs text-gray-300">{Object.entries(feedback.filler_words_found).map(([w, c]) => `"${w}" ×${c}`).join(', ')}</p>
                 </div>
               )}
               {feedback.transcript && (

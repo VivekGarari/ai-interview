@@ -1,3 +1,4 @@
+import { createElement } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Brain, LayoutDashboard, MessageSquare, Video, Code2, History, Settings, LogOut, BookOpen } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
@@ -36,16 +37,15 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
-          {nav.map(({ to, icon: Icon, label, exact }) => (
+          {nav.map(({ to, icon, label, exact }) => (
             <NavLink key={to} to={to} end={exact}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                  isActive
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${isActive
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
                 }`
               }>
-              <Icon size={16} />
+              {createElement(icon, { size: 16 })}
               {label}
             </NavLink>
           ))}
@@ -55,8 +55,7 @@ export default function Layout() {
         <div className="px-3 py-4 border-t border-gray-800 space-y-1">
           <NavLink to="/settings"
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                isActive ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
+              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${isActive ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white hover:bg-gray-800'
               }`
             }>
             <Settings size={16} />Settings

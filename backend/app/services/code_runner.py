@@ -3,6 +3,8 @@ import base64
 import time
 from typing import Optional
 
+from app.core.config import settings
+
 # Language IDs for Judge0
 LANGUAGE_IDS = {
     "python": 71,
@@ -18,24 +20,28 @@ LANGUAGE_IDS = {
     "rust": 73,
 }
 
-# Free public Judge0 instance
-JUDGE0_URL = "https://judge0-ce.p.rapidapi.com"
-
-
 class CodeRunner:
     """
     Runs code safely using Judge0 sandbox.
     Free tier available at judge0-ce.p.rapidapi.com
     """
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        base_url: Optional[str] = None,
+        host: Optional[str] = None,
+    ):
         self.api_key = api_key
+        self.base_url = base_url or settings.JUDGE0_BASE_URL
+        self.host = host or settings.JUDGE0_HOST
         self.headers = {
             "Content-Type": "application/json",
         }
         if api_key:
             self.headers["X-RapidAPI-Key"] = api_key
-            self.headers["X-RapidAPI-Host"] = "judge0-ce.p.rapidapi.com"
+            if self.host:
+                self.headers["X-RapidAPI-Host"] = self.host
 
     def run(self, code: str, language: str, stdin: str = "") -> dict:
         """
@@ -72,7 +78,7 @@ class CodeRunner:
 
             with httpx.Client(timeout=30) as client:
                 resp = client.post(
-                    f"{JUDGE0_URL}/submissions?base64_encoded=true&wait=true",
+                    f"{self.base_url.rstrip('/')}/submissions?base64_encoded=true&wait=true",
                     json=payload,
                     headers=self.headers,
                 )
@@ -98,4 +104,8 @@ class CodeRunner:
             }
 
 
-code_runner = CodeRunner()
+code_runner = CodeRunner(
+    api_key=settings.JUDGE0_API_KEY,
+    base_url=settings.JUDGE0_BASE_URL,
+    host=settings.JUDGE0_HOST,
+)

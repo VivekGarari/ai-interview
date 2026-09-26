@@ -153,6 +153,12 @@ REFRESH_TOKEN_EXPIRE_DAYS=7
 GROQ_API_KEY=your-groq-api-key
 AI_MODEL=llama-3.3-70b-versatile
 
+# Code execution (optional)
+CODE_RUNNER_PROVIDER=judge0
+JUDGE0_BASE_URL=https://judge0-ce.p.rapidapi.com
+JUDGE0_HOST=judge0-ce.p.rapidapi.com
+JUDGE0_API_KEY=your-judge0-api-key
+
 # Email
 RESEND_API_KEY=your-resend-api-key
 

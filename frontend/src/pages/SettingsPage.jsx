@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { createElement, useState } from 'react'
 import { Settings, User, Lock, Loader2, CheckCircle, ChevronDown } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useAuthStore from '../store/authStore'
@@ -15,7 +15,7 @@ function Section({ title, icon: Icon, children }) {
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-5">
-        <Icon size={16} className="text-indigo-400" />
+        {createElement(Icon, { size: 16, className: 'text-indigo-400' })}
         <h2 className="text-sm font-semibold text-white uppercase tracking-wider">{title}</h2>
       </div>
       {children}
@@ -124,11 +124,10 @@ export default function SettingsPage() {
               <div className="grid grid-cols-3 gap-2">
                 {EXPERIENCE_LEVELS.map(l => (
                   <button key={l.value} onClick={() => setProfile({ ...profile, experience_level: l.value })}
-                    className={`py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                      profile.experience_level === l.value
+                    className={`py-2 px-3 rounded-lg text-xs font-medium transition-all ${profile.experience_level === l.value
                         ? 'bg-indigo-600 text-white'
                         : 'bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700'
-                    }`}>
+                      }`}>
                     {l.label}
                   </button>
                 ))}
@@ -169,11 +168,10 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium text-gray-300 mb-2">Confirm New Password</label>
               <input type="password" value={passwords.confirm}
                 onChange={e => setPasswords({ ...passwords, confirm: e.target.value })}
-                className={`w-full bg-gray-800 border rounded-lg px-4 py-2.5 text-white focus:outline-none transition-colors ${
-                  passwords.confirm && passwords.confirm !== passwords.new_password
+                className={`w-full bg-gray-800 border rounded-lg px-4 py-2.5 text-white focus:outline-none transition-colors ${passwords.confirm && passwords.confirm !== passwords.new_password
                     ? 'border-red-500'
                     : 'border-gray-700 focus:border-indigo-500'
-                }`}
+                  }`}
                 placeholder="Repeat new password" />
               {passwords.confirm && passwords.confirm !== passwords.new_password && (
                 <p className="text-xs text-red-400 mt-1">Passwords do not match</p>

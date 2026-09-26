@@ -32,29 +32,37 @@ const groupedRoles = ROLES.reduce((acc, r) => {
 function Timer({ seconds, warning, onExpire }) {
   const [remaining, setRemaining] = useState(seconds)
   const ref = useRef()
+  const remainingRef = useRef(remaining)
+  const onExpireRef = useRef(onExpire)
+
+  useEffect(() => {
+    remainingRef.current = remaining
+  }, [remaining])
+
+  useEffect(() => {
+    onExpireRef.current = onExpire
+  }, [onExpire])
 
   useEffect(() => {
     setRemaining(seconds)
   }, [seconds])
 
   useEffect(() => {
-    if (remaining <= 0) { onExpire?.(); return }
+    if (remainingRef.current <= 0) { onExpireRef.current?.(); return }
     ref.current = setInterval(() => setRemaining(r => {
-      if (r <= 1) { clearInterval(ref.current); onExpire?.(); return 0 }
+      if (r <= 1) { clearInterval(ref.current); onExpireRef.current?.(); return 0 }
       return r - 1
     }), 1000)
     return () => clearInterval(ref.current)
   }, [seconds])
 
-  const pct = remaining / seconds
   const isWarning = remaining <= warning
   const mm = Math.floor(remaining / 60).toString().padStart(2, '0')
   const ss = (remaining % 60).toString().padStart(2, '0')
 
   return (
-    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors ${
-      isWarning ? 'bg-red-600/20 text-red-400 animate-pulse' : 'bg-gray-800 text-white'
-    }`}>
+    <div className={`flex items-center gap-2 px-4 py-2 rounded-xl font-mono text-sm font-bold transition-colors ${isWarning ? 'bg-red-600/20 text-red-400 animate-pulse' : 'bg-gray-800 text-white'
+      }`}>
       <Clock size={14} />
       {mm}:{ss}
     </div>
@@ -420,11 +428,10 @@ export default function MockExamPage() {
           <div className="flex gap-1">
             {examData.questions.map((_, i) => (
               <button key={i} onClick={() => setCurrentIdx(i)}
-                className={`w-5 h-5 rounded text-xs font-medium transition-colors ${
-                  i === currentIdx ? 'bg-indigo-600 text-white' :
-                  answers[i] ? 'bg-emerald-600/30 text-emerald-400' :
-                  'bg-gray-800 text-gray-500 hover:bg-gray-700'
-                }`}>
+                className={`w-5 h-5 rounded text-xs font-medium transition-colors ${i === currentIdx ? 'bg-indigo-600 text-white' :
+                    answers[i] ? 'bg-emerald-600/30 text-emerald-400' :
+                      'bg-gray-800 text-gray-500 hover:bg-gray-700'
+                  }`}>
                 {i + 1}
               </button>
             ))}
@@ -453,11 +460,10 @@ export default function MockExamPage() {
         <div className="max-w-2xl mx-auto space-y-5">
           {/* Type badge */}
           <div className="flex items-center gap-2">
-            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-              currentQ.type === 'mcq' ? 'bg-blue-500/20 text-blue-400' :
-              currentQ.type === 'coding' ? 'bg-purple-500/20 text-purple-400' :
-              'bg-amber-500/20 text-amber-400'
-            }`}>
+            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full uppercase tracking-wider ${currentQ.type === 'mcq' ? 'bg-blue-500/20 text-blue-400' :
+                currentQ.type === 'coding' ? 'bg-purple-500/20 text-purple-400' :
+                  'bg-amber-500/20 text-amber-400'
+              }`}>
               {currentQ.type.replace('_', ' ')}
             </span>
             <span className="text-xs text-gray-500">{currentQ.points} pt{currentQ.points > 1 ? 's' : ''}</span>
@@ -476,9 +482,8 @@ export default function MockExamPage() {
                 const isSelected = answers[currentIdx] === letter
                 return (
                   <button key={i} onClick={() => handleAnswer(letter)}
-                    className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${
-                      isSelected ? 'border-indigo-500 bg-indigo-600/10 text-white' : 'border-gray-700 text-gray-300 hover:border-gray-600 hover:bg-gray-800'
-                    }`}>
+                    className={`w-full text-left px-4 py-3 rounded-xl border text-sm transition-all ${isSelected ? 'border-indigo-500 bg-indigo-600/10 text-white' : 'border-gray-700 text-gray-300 hover:border-gray-600 hover:bg-gray-800'
+                      }`}>
                     {opt}
                   </button>
                 )

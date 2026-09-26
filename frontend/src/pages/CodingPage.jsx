@@ -1,8 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Code2, Play, Loader2, CheckCircle, XCircle, Lightbulb, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { codingAPI } from '../services/api'
-import useAuthStore from '../store/authStore'
 
 const TOPICS = ['arrays', 'strings', 'linked lists', 'trees', 'graphs', 'dynamic programming', 'sorting', 'binary search', 'recursion', 'hashing']
 const DIFFICULTIES = ['easy', 'medium', 'hard']
@@ -29,7 +28,6 @@ function DifficultyBadge({ difficulty }) {
 }
 
 export default function CodingPage() {
-  const { user } = useAuthStore()
   const [problem, setProblem] = useState(null)
   const [code, setCode] = useState(DEFAULT_CODE.python)
   const [language, setLanguage] = useState('python')

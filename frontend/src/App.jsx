@@ -41,7 +41,7 @@ function AuthRoute({ children }) {
 
 export default function App() {
   const init = useAuthStore((s) => s.init)
-  useEffect(() => { init() }, [])
+  useEffect(() => { init() }, [init])
 
   return (
     <BrowserRouter>

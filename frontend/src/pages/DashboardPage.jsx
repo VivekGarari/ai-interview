@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { createElement, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, Video, Code2, TrendingUp, Trophy, Target, Clock, ChevronRight } from 'lucide-react'
 import { progressAPI } from '../services/api'
@@ -8,7 +8,7 @@ function StatCard({ icon: Icon, label, value, color }) {
   return (
     <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
       <div className={`inline-flex p-2 rounded-lg ${color} mb-3`}>
-        <Icon size={18} className="text-white" />
+        {createElement(Icon, { size: 18, className: 'text-white' })}
       </div>
       <p className="text-2xl font-bold text-white">{value ?? '—'}</p>
       <p className="text-sm text-gray-400 mt-0.5">{label}</p>
@@ -21,7 +21,7 @@ function ActionCard({ icon: Icon, title, desc, color, onClick }) {
     <button onClick={onClick}
       className="bg-gray-900 border border-gray-800 hover:border-indigo-500 rounded-xl p-5 text-left transition-all group w-full">
       <div className={`inline-flex p-2.5 rounded-lg ${color} mb-3`}>
-        <Icon size={20} className="text-white" />
+        {createElement(Icon, { size: 20, className: 'text-white' })}
       </div>
       <div className="flex items-center justify-between">
         <div>
@@ -38,13 +38,11 @@ export default function DashboardPage() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     progressAPI.dashboard()
       .then((r) => setStats(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      .catch(() => { })
   }, [])
 
   return (

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { Brain, Loader2, RefreshCw, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authAPI } from '../services/api'
@@ -124,9 +124,8 @@ export default function VerifyEmailPage() {
                 value={digit}
                 onChange={e => handleChange(i, e.target.value)}
                 onKeyDown={e => handleKeyDown(i, e)}
-                className={`w-12 h-14 text-center text-xl font-bold bg-gray-800 border rounded-xl text-white focus:outline-none transition-all ${
-                  digit ? 'border-indigo-500 bg-indigo-600/10' : 'border-gray-700 focus:border-indigo-500'
-                }`}
+                className={`w-12 h-14 text-center text-xl font-bold bg-gray-800 border rounded-xl text-white focus:outline-none transition-all ${digit ? 'border-indigo-500 bg-indigo-600/10' : 'border-gray-700 focus:border-indigo-500'
+                  }`}
               />
             ))}
           </div>

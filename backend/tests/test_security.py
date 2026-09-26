@@ -77,6 +77,49 @@ class TestCodeExecutionJudge0Path(SecurityTestBase):
         # should have gone through the Judge0 attempt, not local execution
         self.assertIsNotNone(result)
 
+    def test_configured_judge0_settings_are_used(self):
+        from unittest.mock import patch
+
+        runner = CodeRunner(
+            api_key="test-key",
+            base_url="https://judge0.test",
+            host="judge0.test",
+        )
+        with patch("app.services.code_runner.httpx.Client") as client:
+            response = client.return_value.__enter__.return_value
+            response.json.return_value = {"status": {"id": 3}}
+            runner.run(code="print('hello')", language="python")
+
+        request = client.return_value.__enter__.return_value.post.call_args
+        self.assertEqual(
+            request.args[0],
+            "https://judge0.test/submissions?base64_encoded=true&wait=true",
+        )
+        self.assertEqual(request.kwargs["headers"]["X-RapidAPI-Host"], "judge0.test")
+
+    def test_global_runner_uses_centralized_settings(self):
+        from app.core.config import settings
+        from app.services.code_runner import code_runner
+
+        self.assertEqual(code_runner.api_key, settings.JUDGE0_API_KEY)
+        self.assertEqual(code_runner.base_url, settings.JUDGE0_BASE_URL)
+        self.assertEqual(code_runner.host, settings.JUDGE0_HOST)
+
+    def test_configured_runner_does_not_expose_api_key_in_errors(self):
+        from unittest.mock import patch
+
+        runner = CodeRunner(
+            api_key="secret-test-key",
+            base_url="https://judge0.test",
+            host="judge0.test",
+        )
+        with patch("app.services.code_runner.httpx.Client") as client:
+            client.side_effect = RuntimeError("request failed")
+            result = runner.run(code="print('hello')", language="python")
+
+        self.assertFalse(result["success"])
+        self.assertNotIn("secret-test-key", result["stderr"])
+
 
 if __name__ == "__main__":
     unittest.main()
