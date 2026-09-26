@@ -57,19 +57,32 @@ become more confident in technical interviews.
 |--------|----------------|
 | Backend | FastAPI (Python 3.11), SQLAlchemy sync + PostgreSQL, JWT auth, deployed on Render |
 | Frontend | React 19 + Vite + Tailwind, deployed as a static site |
-| AI today | **Groq** (LLaMA 3.3 70B) for LLM tasks, **Groq Whisper** for speech-to-text, **Edge TTS** for interviewer voice |
+| AI today | **OpenRouter** is the current primary general LLM provider; **Groq** remains available for compatibility/STT; **Edge TTS** provides interviewer voice |
 | Written interview | Implemented (text chat, AI questions/feedback, session reports) |
 | Video interview | Partially implemented (audio recording → STT → text analysis); see [Video Interview](docs/VIDEO_INTERVIEW.md) |
 | Coding | Partially implemented (AI problem generation, code run, AI review); no real test-case grading |
 | Mock exam | Implemented, but exam state is held in server memory only |
 | Skill profile / mastery / recommendations | **Not implemented** (dashboard is aggregate stats only) |
 | Company/business platform (ProctoAI Hire) | **Not implemented / future** |
-| Question store, taxonomy, question versioning | **Not implemented** (AI generates fresh each session) |
-| Structured AI outputs / provider abstraction | **Partially scaffolded, not productionized** |
+| Question store, taxonomy, question versioning | Foundation implemented; normal interview startup still does not select persistent questions |
+| Structured AI outputs / provider abstraction | Provider abstraction implemented; structured generation/validation is not started |
 
 Precise, file-by-file audit of what exists: [Repository Audit](docs/ARCHITECTURE.md#15-repository-audit).
 Anything marked `[FUTURE]` or `[IDEA]` in the docs is **not** present today and should never be
 described as existing.
+
+## Development Status & Plan
+
+The authoritative execution plan is [Implementation Plan](docs/IMPLEMENTATION_PLAN.md). It records
+completed checkpoints, partial integrations, open security findings, deferred scope, dependencies,
+and the next implementation checkpoint.
+
+Start with:
+
+- [Implementation Plan](docs/IMPLEMENTATION_PLAN.md)
+- [Security](docs/SECURITY.md)
+- [Product Roadmap](docs/PRODUCT_ROADMAP.md)
+- [V1 Scope](docs/V1_SCOPE.md)
 
 ## V1 scope (recommended)
 
@@ -151,9 +164,8 @@ npm install
 npm run dev                                       # http://localhost:5173
 ```
 
-> Note: `frontend/src/services/api.js` hardcodes the production backend URL
-> (`https://proctoai-backend.onrender.com`). For local development you must edit it or the app
-> will talk to production.
+> Note: `frontend/src/services/api.js` reads `VITE_API_BASE_URL` and falls back to the local
+> backend URL. Set the frontend environment value explicitly for deployment environments.
 
 ## Documentation Map
 
