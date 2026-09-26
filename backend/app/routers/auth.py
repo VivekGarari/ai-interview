@@ -16,7 +16,7 @@ from app.schemas.auth import (
     SignupRequest, LoginRequest, RefreshRequest,
     UpdateProfileRequest, ChangePasswordRequest,
     VerifyEmailRequest, ResendOTPRequest,
-    TokenResponse, UserResponse, MessageResponse,
+    TokenResponse, SignupResponse, UserResponse, MessageResponse,
 )
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -24,7 +24,7 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 # ── POST /auth/signup ─────────────────────────────────
 
-@router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/signup", response_model=SignupResponse, status_code=status.HTTP_201_CREATED)
 def signup(body: SignupRequest, db: Session = Depends(get_db)):
     from app.services.email_service import email_service
 
@@ -38,15 +38,17 @@ def signup(body: SignupRequest, db: Session = Depends(get_db)):
         full_name=body.full_name,
         target_role=body.target_role,
         experience_level=body.experience_level,
-        is_verified=True,
+        is_verified=False,
+        otp_code=str(random.randint(100000, 999999)),
+        otp_expires_at=datetime.now(timezone.utc) + timedelta(minutes=10),
     )
     db.add(user)
     db.commit()
     db.refresh(user)
+    email_service.send_otp(user.email, user.full_name, user.otp_code)
 
-    return TokenResponse(
-        access_token=create_access_token(user.id),
-        refresh_token=create_refresh_token(user.id),
+    return SignupResponse(
+        message="Account created. Check your email for the verification code.",
         user=UserResponse.model_validate(user),
     )
 
@@ -62,6 +64,8 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
 
     if not user.is_active:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This account has been deactivated.")
+    if not user.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email before logging in.")
 
     user.last_login_at = datetime.now(timezone.utc)
     db.commit()
@@ -84,6 +88,8 @@ def refresh_tokens(body: RefreshRequest, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.id == user_id)).scalars().first()
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found.")
+    if not user.is_verified:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Please verify your email before logging in.")
 
     return TokenResponse(
         access_token=create_access_token(user.id),
@@ -142,17 +148,20 @@ def logout(current_user: User = Depends(get_current_user)):
 
 # ── POST /auth/verify-email ───────────────────────────
 
-@router.post("/verify-email", response_model=MessageResponse)
+@router.post("/verify-email", response_model=TokenResponse)
 def verify_email(body: VerifyEmailRequest, db: Session = Depends(get_db)):
     user = db.execute(select(User).where(User.email == body.email)).scalars().first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found.")
     if user.is_verified:
-        return MessageResponse(message="Email already verified.")
+        raise HTTPException(status_code=400, detail="Email already verified.")
     if not user.otp_code or not user.otp_expires_at:
         raise HTTPException(status_code=400, detail="No OTP found. Please request a new one.")
-    if datetime.now(timezone.utc) > user.otp_expires_at:
+    now = datetime.now(timezone.utc)
+    if user.otp_expires_at.tzinfo is None:
+        now = now.replace(tzinfo=None)
+    if now > user.otp_expires_at:
         raise HTTPException(status_code=400, detail="OTP has expired. Please request a new one.")
     if user.otp_code != body.otp:
         raise HTTPException(status_code=400, detail="Invalid OTP code.")
@@ -161,7 +170,11 @@ def verify_email(body: VerifyEmailRequest, db: Session = Depends(get_db)):
     user.otp_code = None
     user.otp_expires_at = None
     db.commit()
-    return MessageResponse(message="Email verified successfully!")
+    return TokenResponse(
+        access_token=create_access_token(user.id),
+        refresh_token=create_refresh_token(user.id),
+        user=UserResponse.model_validate(user),
+    )
 
 
 # ── POST /auth/resend-otp ─────────────────────────────

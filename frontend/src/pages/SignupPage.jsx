@@ -15,8 +15,8 @@ export default function SignupPage() {
     setLoading(true)
     try {
       await signup({ ...form, target_role: 'software_engineer', experience_level: 'junior' })
-      toast.success('Account created!')
-      navigate('/')
+      toast.success('Account created. Check your email for the verification code.')
+      navigate('/verify-email')
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Signup failed')
     } finally {

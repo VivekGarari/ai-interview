@@ -85,13 +85,15 @@ def start_video_session(
 def get_question_audio(
     question_id: str,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """
     Returns MP3 audio of the AI interviewer speaking the question.
     Frontend plays this to simulate AI avatar speaking.
     """
     question = db.query(SessionQuestion).filter(
-        SessionQuestion.id == question_id
+        SessionQuestion.id == question_id,
+        SessionQuestion.session.has(InterviewSession.user_id == current_user.id),
     ).first()
 
     if not question:

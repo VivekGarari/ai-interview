@@ -166,9 +166,9 @@ Security findings must not be dropped because they do not affect the current fea
 
 | ID | Severity | Finding | Current status | Planned checkpoint | Question Generation blocker | Production blocker | Required verification |
 |---|---|---|---|---|---|---|---|
-| SEC-001 | HIGH | Exam submission BOLA/IDOR: exam ownership is not checked before grading/deletion | OPEN | Phase A — Access Control | NO | YES | User B cannot submit User A's exam; owner can submit own exam |
-| SEC-002 | HIGH | Video question audio is public and has no session ownership check | OPEN | Phase A — Access Control | NO | YES | Anonymous access rejected; cross-user access rejected; owner access succeeds |
-| SEC-003 | HIGH | Signup marks accounts verified and issues tokens immediately | OPEN | Phase A — Authentication | NO | YES if verification is required | New user starts unverified; valid OTP verifies; invalid OTP does not |
+| SEC-001 | HIGH | Exam submission BOLA/IDOR: exam ownership is not checked before grading/deletion | COMPLETE | Phase A — Access Control | NO | NO | Focused owner/cross-user/missing-exam tests pass |
+| SEC-002 | HIGH | Video question audio is public and has no session ownership check | COMPLETE | Phase A — Access Control | NO | NO | Focused authenticated-owner/cross-user/missing-question tests pass |
+| SEC-003 | HIGH | Signup marks accounts verified and issues tokens immediately | COMPLETE | Phase A — Authentication | NO | NO | Signup/OTP/login/current-user/refresh/WebSocket/persistence tests pass |
 | SEC-004 | HIGH | No effective rate limiting or abuse controls for auth, AI, coding, uploads, or processing | OPEN | Phase G — Security Hardening | NO for local development | YES | Endpoint-specific throttling and quota tests |
 | SEC-005 | HIGH | Access and refresh JWTs are stored in browser `localStorage` | OPEN | Phase G — Session / Token Security | NO | YES for hardened production | Token storage, rotation, revocation, and logout tests |
 | SEC-006 | MEDIUM | Audio/video uploads have insufficient size, type, duration, and storage controls | OPEN | Phase I — Video Interview | NO | YES for video production | Oversize, invalid-type, duration, and quota tests |
@@ -183,7 +183,7 @@ When a remediation checkpoint is completed, update the finding status, tests, ve
 
 ### Phase A — Immediate Security Remediation
 
-**Next implementation checkpoint.**
+**Status: COMPLETE for SEC-001, SEC-002, and SEC-003.**
 
 Objective: fix the three access-control/authentication findings that directly expose user data or bypass intended verification.
 
@@ -197,9 +197,11 @@ Objective: fix the three access-control/authentication findings that directly ex
 
 Definition of done: the three access-control flows reject unauthorized requests, legitimate owner flows still work, tests pass, and the security register is updated.
 
+Completed verification: 9 focused remediation tests passed and the full backend suite passed with 44 tests.
+
 ### Phase B — Question Generation Foundation
 
-**Status: NOT STARTED**
+**Status: NOT STARTED — next implementation checkpoint.**
 
 Objective: build a production-grade, controlled generation pipeline.
 
@@ -398,11 +400,11 @@ The following are deliberately out of the current checkpoint:
 | Error audit | COMPLETE | Configuration and frontend validation issues fixed | No |
 | Infrastructure audit | COMPLETE | Dependencies, DB, providers, Compose, CORS, and safe failure reviewed | No |
 | Database audit | COMPLETE | Schema and integrity baseline verified | No |
-| Backdoor/security audit | COMPLETE | No confirmed backdoor; open findings registered | Phase A |
-| SEC-001 | OPEN | Exam ownership | Phase A |
-| SEC-002 | OPEN | Video audio authorization | Phase A |
-| SEC-003 | OPEN | Email verification | Phase A |
-| Question Generation | NOT STARTED | Requires contract checkpoint first | Yes |
+| Backdoor/security audit | COMPLETE | No confirmed backdoor; security findings registered | No |
+| SEC-001 | COMPLETE | Exam ownership verified with focused regression tests | No |
+| SEC-002 | COMPLETE | Video audio ownership verified with focused regression tests | No |
+| SEC-003 | COMPLETE | Unverified signup and OTP completion verified with focused regression tests | No |
+| Question Generation | NOT STARTED | Contract checkpoint is next | Yes |
 | Evaluation system | NOT STARTED | Structured rubric/evaluation not implemented | No |
 | Adaptive follow-up | NOT STARTED | Depends on evaluation | No |
 | Coding hardening | NOT STARTED | Judge0-only foundation exists; grading hardening remains | No |
@@ -415,7 +417,7 @@ The following are deliberately out of the current checkpoint:
 The current checkpoint is complete when:
 
 - The documentation accurately distinguishes complete, partial, open, deferred, and not-started work.
-- All ten open security findings are tracked and assigned to future checkpoints.
+- All security findings are tracked, and every remaining OPEN finding is assigned to a future checkpoint.
 - Question Generation remains marked NOT STARTED.
-- Phase A security remediation is explicitly the next implementation checkpoint.
+- Phase B Question Generation is explicitly the next implementation checkpoint.
 - No source code, tests, configuration, or database schema is changed by this documentation update.

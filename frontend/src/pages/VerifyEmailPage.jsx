@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Brain, Loader2, RefreshCw, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { authAPI } from '../services/api'
-import useAuthStore from '../store/authStore'
+import useAuthStore, { PENDING_VERIFICATION_EMAIL_KEY } from '../store/authStore'
 
 export default function VerifyEmailPage() {
   const [otp, setOtp] = useState(['', '', '', '', '', ''])
@@ -14,8 +14,8 @@ export default function VerifyEmailPage() {
   const [canResend, setCanResend] = useState(false)
   const inputs = useRef([])
   const navigate = useNavigate()
-  const { user, setUser } = useAuthStore()
-  const email = user?.email || ''
+  const { user, setAuthenticatedUser } = useAuthStore()
+  const email = user?.email || sessionStorage.getItem(PENDING_VERIFICATION_EMAIL_KEY) || ''
 
   // Countdown for resend button
   useEffect(() => {
@@ -54,9 +54,9 @@ export default function VerifyEmailPage() {
     if (loading) return
     setLoading(true)
     try {
-      await authAPI.verifyEmail({ email, otp: code })
+      const { data } = await authAPI.verifyEmail({ email, otp: code })
       setVerified(true)
-      setUser({ ...user, is_verified: true })
+      setAuthenticatedUser(data)
       toast.success('Email verified!')
       setTimeout(() => navigate('/'), 1500)
     } catch (err) {

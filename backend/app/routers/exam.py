@@ -76,7 +76,7 @@ def submit_exam(
 ):
     """Grade exam — auto for MCQ, AI for short answer and coding."""
     exam_data = _exams.get(submission.exam_id)
-    if not exam_data:
+    if not exam_data or exam_data["user_id"] != current_user.id:
         raise HTTPException(status_code=404, detail="Exam not found or expired")
 
     config = exam_data["config"]

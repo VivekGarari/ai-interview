@@ -77,6 +77,6 @@ def get_current_user(
         raise credentials_error
 
     user = db.query(User).filter(User.id == user_id).first()
-    if not user or not user.is_active:
+    if not user or not user.is_active or not user.is_verified:
         raise credentials_error
     return user

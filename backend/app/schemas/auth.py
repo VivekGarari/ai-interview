@@ -63,5 +63,10 @@ class TokenResponse(BaseModel):
     user: UserResponse
 
 
+class SignupResponse(BaseModel):
+    message: str
+    user: UserResponse
+
+
 class MessageResponse(BaseModel):
     message: str

@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { authAPI } from '../services/api'
 
+export const PENDING_VERIFICATION_EMAIL_KEY = 'pending_verification_email'
+
 const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
@@ -28,10 +30,16 @@ const useAuthStore = create((set) => ({
 
   signup: async (formData) => {
     const { data } = await authAPI.signup(formData)
+    sessionStorage.setItem(PENDING_VERIFICATION_EMAIL_KEY, data.user.email)
+    set({ user: data.user, isAuthenticated: false })
+    return data
+  },
+
+  setAuthenticatedUser: (data) => {
     localStorage.setItem('access_token', data.access_token)
     localStorage.setItem('refresh_token', data.refresh_token)
+    sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY)
     set({ user: data.user, isAuthenticated: true })
-    return data
   },
 
   // Update user in store after profile edit
@@ -39,6 +47,7 @@ const useAuthStore = create((set) => ({
 
   logout: () => {
     localStorage.clear()
+    sessionStorage.removeItem(PENDING_VERIFICATION_EMAIL_KEY)
     set({ user: null, isAuthenticated: false })
     window.location.href = '/login'
   },

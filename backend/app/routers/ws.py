@@ -41,6 +41,10 @@ async def interview_websocket(websocket: WebSocket, session_id: str):
             await websocket.send_text(json.dumps({"type": "error", "message": "User not found"}))
             await websocket.close()
             return
+        if not user.is_verified:
+            await websocket.send_text(json.dumps({"type": "error", "message": "Unauthorized"}))
+            await websocket.close()
+            return
 
         # Step 2: Verify session
         session = db.query(InterviewSession).filter(

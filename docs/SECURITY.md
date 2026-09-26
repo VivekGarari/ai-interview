@@ -42,6 +42,45 @@ on the server.
 - Code execution with Judge0 configured: **Uses remote sandbox** (existing path, unchanged)
 - Direct host execution of candidate code: **Not possible** (no reachable path)
 
+## Phase A Remediations (Current)
+
+### 3. Exam Submission Ownership — FIXED
+
+`POST /exam/submit` now verifies that the stored in-memory exam belongs to the authenticated
+user before grading, returning the existing `404 Exam not found or expired` response for missing
+or cross-user exam IDs. The exam system remains in-memory as documented; this change only closes
+the ownership check.
+
+### 4. Video Question Audio Ownership — FIXED
+
+`GET /video/question/{question_id}/audio` now requires the existing authenticated-user dependency
+and resolves the question through its interview session owner before invoking TTS. Missing,
+cross-user, and unauthenticated access cannot trigger audio generation.
+
+### 5. Email Verification at Signup — FIXED
+
+Signup now creates users as unverified, stores an OTP using the existing verification fields, sends
+the OTP through the existing email provider, and returns no access or refresh token. Login, refresh,
+the shared current-user dependency, and the existing WebSocket handshake reject unverified accounts.
+Successful OTP verification marks the correct user verified and returns the normal authenticated
+token response. The frontend preserves only the pending verification email in session storage so a
+verification-page reload can continue the flow; the OTP and authentication tokens are not stored
+there, and the pending email is cleared after successful verification.
+
+Focused regression coverage for these remediations is in
+`backend/tests/test_security_remediation.py`. The focused suite has 16 passing tests and the full
+backend suite has 51 passing tests after implementation.
+
+The following security work remains open and is intentionally not part of this checkpoint:
+
+- Rate limiting and abuse controls
+- Browser token storage and session hardening
+- Upload limits and media validation
+- WebSocket active-user authorization
+- Raw exception sanitization
+- OTP enumeration and brute-force protection
+- Startup schema mutation and migration hardening
+
 ## Remaining Security Risks (Future Phases)
 
 - **No password-reset flow**: A proper email-based password-reset mechanism is not yet implemented.
